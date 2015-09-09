@@ -42,7 +42,7 @@ var g_GameData;
  */
 function selectPanel(panelNumber)
 {
-	var panelNames = [ 'scorePanel', 'buildingsPanel', 'unitsPanel', 'resourcesPanel', 'marketPanel', 'miscPanel'];
+	var panelNames = [ 'scorePanel', 'buildingsPanel', 'unitsPanel', 'resourcesPanel', 'marketPanel', 'miscPanel', 'chartPanel' ];
 
 	function adjustTabDividers(tabSize)
 	{
@@ -60,7 +60,14 @@ function selectPanel(panelNumber)
 	Engine.GetGUIObjectByName(panelNames[panelNumber] + 'Button').sprite = "ForegroundTab";
 	adjustTabDividers(Engine.GetGUIObjectByName(panelNames[panelNumber] + 'Button').size);
 
-	updatePanelData(panelsData[panelNumber]);
+	if (panelNumber<6){
+		updatePanelData(panelsData[panelNumber]);
+		Engine.GetGUIObjectByName("generalPanel").hidden = false;
+		Engine.GetGUIObjectByName("chartPanel").hidden = true;
+	} else {
+		Engine.GetGUIObjectByName("generalPanel").hidden = true;
+		Engine.GetGUIObjectByName("chartPanel").hidden = false;
+	}
 }
 
 function updatePanelData(panelInfo)
@@ -134,6 +141,9 @@ function init(data)
 
 	// Map
 	var mapDisplayType = translate("Scenario");
+
+	// Initialize Charts
+	Charts.action(null, null, data);
 
 	Engine.GetGUIObjectByName("timeElapsed").caption = sprintf(translate("Game time elapsed: %(time)s"), { time: timeToString(data.timeElapsed) });
 

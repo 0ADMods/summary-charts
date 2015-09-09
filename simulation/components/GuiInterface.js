@@ -178,9 +178,14 @@ GuiInterface.prototype.GetExtendedSimulationState = function(player)
 	for (var i = 0; i < n; ++i)
 	{
 		var playerEnt = cmpPlayerManager.GetPlayerByID(i);
+
 		var cmpPlayerStatisticsTracker = Engine.QueryInterface(playerEnt, IID_StatisticsTracker);
 		if (cmpPlayerStatisticsTracker)
 			ret.players[i].statistics = cmpPlayerStatisticsTracker.GetStatistics();
+
+		var cmpPlayerChartsTracker = Engine.QueryInterface(playerEnt, IID_ChartsTracker);
+		if (cmpPlayerChartsTracker)
+			ret.players[i].chartData = cmpPlayerChartsTracker.GetChartData();
 	}
 
 	return ret;

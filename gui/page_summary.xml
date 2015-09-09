@@ -8,4 +8,6 @@
 
     <include>summary/summary.xml</include>
     <include>summary/sprites.xml</include>
+
+    <include>common/chart_sprites.xml</include>
 </page>

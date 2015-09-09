@@ -13,6 +13,7 @@
     <AlertnessPeaceThreshold>0</AlertnessPeaceThreshold>
     <AlertnessMax>8</AlertnessMax>
   </BattleDetection>
+  <ChartsTracker/>
   <EntityLimits>
     <Limits>
       <CivilCentre>1</CivilCentre>
