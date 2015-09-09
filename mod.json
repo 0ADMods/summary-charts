@@ -1,9 +1,9 @@
 {
   "name": "charts",
   "label": "0 A.D. Charts Extension",
-  "url": "search the 0A.D. forum",
-  "description": "Visualizes resource consumption, units, etc",
-  "dependencies": ["0ad"],
+  "url": "wildfiregames.com/forum/index.php?showtopic=18763",
+  "description": "Visualizes resource consumption, units and more",
+  "dependencies": ["0ad=0.0.18"],
   "type": "statistics addon",
-  "version": "0.0.17"
+  "version": "0.0.18"
 }

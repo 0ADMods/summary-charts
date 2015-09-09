@@ -1,6 +1,6 @@
 
 // Updates every minute
-const UPDATE_TIMER_INTERVAL = 60000, VERSION = "0.1.1";
+const UPDATE_TIMER_INTERVAL = 60000, VERSION = "0.1.18"; // 60000
 
 function ChartsTracker() {}
 
@@ -23,20 +23,24 @@ ChartsTracker.prototype.updateData = function()
 {
   // Get player + range + stats manager
   var cmpPlayer = Engine.QueryInterface(this.entity, IID_Player);
-  var cmpRangeManager = Engine.QueryInterface(SYSTEM_ENTITY, IID_RangeManager);
-  var cmpStatisticsManager = Engine.QueryInterface(this.entity, IID_StatisticsTracker);
+  var id = cmpPlayer.GetPlayerID();
+  var mapExplored = Engine.QueryInterface(SYSTEM_ENTITY, IID_RangeManager).GetPercentMapExplored(cmpPlayer.GetPlayerID());
   var resourceCount = cmpPlayer.GetResourceCounts();
-  var statistics = cmpStatisticsManager.GetStatistics();
+  var statistics = Engine.QueryInterface(this.entity, IID_StatisticsTracker).GetStatistics();
 
-  this.chartData[this.timeStamp++] =  {
-    'area': cmpRangeManager.GetPercentMapExplored(cmpPlayer.GetPlayerID()),
-    'food': resourceCount.food,
-    'wood': resourceCount.wood,
+  this.timeStamp += 1;
+
+  this.chartData[this.timeStamp + ""] =  {
+    'area':  mapExplored,
+    'food':  resourceCount.food,
+    'wood':  resourceCount.wood,
     'stone': resourceCount.stone,
     'metal': resourceCount.metal,
     'units': cmpPlayer.GetPopulationCount(),
     'buildings': statistics.buildingsConstructed.total - statistics.buildingsLost.total
   };
+
+  // print ("CHARTS: updateData: p: " + id + "/" +  this.timeStamp + " : " + uneval(this.chartData[this.timeStamp + ""]) + "\n");
 
 };
 

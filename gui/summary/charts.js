@@ -4,7 +4,7 @@ var Charts = (function(){
 
   "use strict";
 
-  const DOTS = 110, HEIGHT = 470, TOP = 75, LEFT = 46, DEBUG = 1, VERSION = "0.1.1";
+  const DOTS = 110, HEIGHT = 470, TOP = 75, LEFT = 46, DEBUG = 1, VERSION = "0.1.18";
 
   var curMetric = 1, minutes, $ = Engine.GetGUIObjectByName, 
       metrics = {
@@ -34,13 +34,15 @@ var Charts = (function(){
   function scale (x,xMin,xMax,min,max){return (max-min)*(x-xMin)/(xMax-xMin)+min;}
   function fmt   (){var a=Array.prototype.slice.apply(arguments),s=a[0].split("%s"),p=a.slice(1).concat([""]),c=0;return s.map(function(t){return t + p[c++];}).join('');}
   function menuCapName (m){return "chartMenuCaption" + m[0].toUpperCase() + m.slice(1);}    
+
   function interpolate (data, points){
 
     // http://www.hevi.info/2012/03/interpolating-and-array-to-fit-another-size/
     
-    var newData = [],
-        factor  = (data.length - 1) / (points -1),
-        i, tmp, point;
+    var 
+      newData = [],
+      factor  = (data.length - 1) / (points -1),
+      i, tmp, point;
 
     function linear(p1, p2, px) {return p1 + (p2 - p1) * px;}
 
@@ -59,16 +61,17 @@ var Charts = (function(){
 
   function init(dataGame){
 
-    var p, d, data, chartData, btn,
-        maxAll, maxData, minAll, minData, 
-        maxPlayers = dataGame.playerStates.length;
-        
-    minutes  = Object.keys(dataGame.playerStates[1].chartData).length;
+    var 
+      p, d, data, chartData, btn,
+      maxAll, maxData, minAll, minData, 
+      maxPlayers = dataGame.playerStates.length;
+      
+    minutes = Object.keys(dataGame.playerStates[1].chartData).length;
 
     deb("init: players: %s, stamps: %s\n", maxPlayers -1, minutes);
 
     // toggle all players dots off
-    [1,2,3,4,5,6,7,8].forEach(p => {
+    [0,1,2,3,4,5,6,7,8].forEach(p => {
       btn = $("chartPlayer" + p);
       if (btn){btn.hidden = false;}
     });
@@ -126,9 +129,9 @@ var Charts = (function(){
 
     var metric = Object.keys(metrics)[curMetric];
 
-    $("chartTickTextYMax").caption = ~~metrics[metric].max + (metric === "area" ? "%" : "");
+    $("chartTickTextYMax").caption  = ~~metrics[metric].max + (metric === "area" ? "%" : "");
     $("chartTickTextYHalf").caption = ~~(metrics[metric].max / 2) + (metric === "area" ? "%" : "");
-    $("chartTickTextXMax").caption = minutes + " min";
+    $("chartTickTextXMax").caption  = minutes + " min";
     $("chartTickTextXHalf").caption = ~~(minutes / 2) + " min";
 
   }
@@ -190,8 +193,8 @@ var Charts = (function(){
       deb("\n====> Charts.action: %s, %s, %s\n", metric, player, data);
 
       if (!metric && !player){init(data); showMetric(0); return;}
-      if ( metric && !player){showMetric(metric -1); return;}
-      if (!metric &&  player){togglePlayer(player); return;}
+      if ( metric && !player){showMetric(metric -1);     return;}
+      if (!metric &&  player){togglePlayer(player);      return;}
 
     }
 
