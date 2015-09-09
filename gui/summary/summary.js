@@ -1,30 +1,27 @@
-// Max player slots for any map (should read from config)
-const MAX_SLOTS = 8;
-const MAX_TEAMS = 4;
 const MAX_HEADINGTITLE = 8;
 
 // const for filtering long collective headings
 const LONG_HEADING_WIDTH = 250;
-// vertical size of player box
+// Vertical size of player box
 const PLAYER_BOX_Y_SIZE = 30;
-// gap between players boxes
+// Gap between players boxes
 const PLAYER_BOX_GAP = 2;
-// alpha for player box
+// Alpha for player box
 const PLAYER_BOX_ALPHA = " 32";
-// alpha for player colour box
-const PLAYER_COLOUR_BOX_ALPHA = " 255";
+// Alpha for player color box
+const PLAYER_COLOR_BOX_ALPHA = " 255";
 // yStart value for spacing teams boxes (and noTeamsBox)
 const TEAMS_BOX_Y_START = 65;
-// colours used for units and buildings
+// Colors used for units and buildings
 const TRAINED_COLOR = '[color="201 255 200"]';
 const LOST_COLOR = '[color="255 213 213"]';
 const KILLED_COLOR = '[color="196 198 255"]';
 
 const BUILDINGS_TYPES = [ "total", "House", "Economic", "Outpost", "Military", "Fortress", "CivCentre", "Wonder" ];
-const UNITS_TYPES = [ "total", "Infantry", "Worker", "Cavalry", "Champion", "Hero", "Ship" ];
+const UNITS_TYPES = [ "total", "Infantry", "Worker", "Cavalry", "Champion", "Hero", "Ship", "Trader" ];
 const RESOURCES_TYPES = [ "food", "wood", "stone", "metal" ];
 
-// colours used for gathered and traded resources
+// Colors used for gathered and traded resources
 const INCOME_COLOR = '[color="201 255 200"]';
 const OUTCOME_COLOR = '[color="255 213 213"]';
 
@@ -32,10 +29,10 @@ const DEFAULT_DECIMAL = "0.00";
 const INFINITE_SYMBOL = "\u221E";
 // Load data
 var g_CivData = loadCivData();
-var g_Teams = [ ];
-// TODO set g_MaxPlayers as playerCounters.length
-var g_MaxPlayers = 0;
-// Count players without team	(or all if teams are not displayed)
+var g_Teams = [];
+// TODO set g_PlayerCount as playerCounters.length
+var g_PlayerCount = 0;
+// Count players without team (or all if teams are not displayed)
 var g_WithoutTeam = 0;
 var g_GameData;
 
@@ -83,7 +80,7 @@ function updatePanelData(panelInfo)
 	updateGeneralPanelTeams();
 
 	var playerBoxesCounts = [ ];
-	for (var i = 0; i < g_MaxPlayers; ++i)
+	for (var i = 0; i < g_PlayerCount; ++i)
 	{
 		var playerState = g_GameData.playerStates[i+1];
 
@@ -95,32 +92,32 @@ function updatePanelData(panelInfo)
 		var positionObject = playerBoxesCounts[playerState.team+1] - 1;
 		var rowPlayer = "playerBox[" + positionObject + "]";
 		var playerNameColumn = "playerName[" + positionObject + "]";
-		var playerColourBoxColumn = "playerColourBox[" + positionObject + "]";
+		var playerColorBoxColumn = "playerColorBox[" + positionObject + "]";
 		var playerCivicBoxColumn = "civIcon[" + positionObject + "]";
 		var playerCounterValue = "valueData[" + positionObject + "]";
 		if (playerState.team != -1)
 		{
 			rowPlayer = "playerBoxt[" + playerState.team + "][" + positionObject + "]";
 			playerNameColumn = "playerNamet[" + playerState.team + "][" + positionObject + "]";
-			playerColourBoxColumn = "playerColourBoxt[" + playerState.team + "][" + positionObject + "]";
+			playerColorBoxColumn = "playerColorBoxt[" + playerState.team + "][" + positionObject + "]";
 			playerCivicBoxColumn = "civIcont[" + playerState.team + "][" + positionObject + "]";
 			playerCounterValue = "valueDataTeam[" + playerState.team + "][" + positionObject + "]";
 		}
 
-		var colourString = "colour: "
-				+ Math.floor(playerState.colour.r * 255) + " "
-				+ Math.floor(playerState.colour.g * 255) + " "
-				+ Math.floor(playerState.colour.b * 255);
+		var colorString = "color: "
+				+ Math.floor(playerState.color.r * 255) + " "
+				+ Math.floor(playerState.color.g * 255) + " "
+				+ Math.floor(playerState.color.b * 255);
 
 		var rowPlayerObject = Engine.GetGUIObjectByName(rowPlayer);
 		rowPlayerObject.hidden = false;
-		rowPlayerObject.sprite = colourString + PLAYER_BOX_ALPHA;
+		rowPlayerObject.sprite = colorString + PLAYER_BOX_ALPHA;
 		var boxSize = rowPlayerObject.size;
 		boxSize.right = rowPlayerObjectWidth;
 		rowPlayerObject.size = boxSize;
 
-		var playerColourBox = Engine.GetGUIObjectByName(playerColourBoxColumn);
-		playerColourBox.sprite = colourString + PLAYER_COLOUR_BOX_ALPHA;
+		var playerColorBox = Engine.GetGUIObjectByName(playerColorBoxColumn);
+		playerColorBox.sprite = colorString + PLAYER_COLOR_BOX_ALPHA;
 
 		Engine.GetGUIObjectByName(playerNameColumn).caption = g_GameData.players[i+1].name;
 
@@ -128,10 +125,10 @@ function updatePanelData(panelInfo)
 		civIcon.sprite = "stretched:"+g_CivData[playerState.civ].Emblem;
 		civIcon.tooltip = g_CivData[playerState.civ].Name;
 
-		// update counters
+		// Update counters
 		updateCountersPlayer(playerState, panelInfo.counters, playerCounterValue);
 	}
-	// update team counters
+	// Update team counters
 	var teamCounterFn = panelInfo.teamCounterFn
 	if (g_Teams && teamCounterFn)
 		teamCounterFn(panelInfo.counters);
@@ -148,7 +145,7 @@ function init(data)
 	// Initializes Charts
 	Charts.action(null, null, data);
 
-	Engine.GetGUIObjectByName("timeElapsed").caption = sprintf(translate("Time elapsed: %(time)s"), { time: timeToString(data.timeElapsed) });
+	Engine.GetGUIObjectByName("timeElapsed").caption = sprintf(translate("Game time elapsed: %(time)s"), { time: timeToString(data.timeElapsed) });
 
 	Engine.GetGUIObjectByName("summaryText").caption = data.gameResult;
 
@@ -172,22 +169,21 @@ function init(data)
 	Engine.GetGUIObjectByName("mapName").caption = sprintf(translate("%(mapName)s - %(mapType)s"), { mapName: translate(data.mapSettings.Name), mapType: mapDisplayType});
 
 	// Panels
-	g_MaxPlayers = data.playerStates.length - 1;
+	g_PlayerCount = data.playerStates.length - 1;
 
 	if (data.mapSettings.LockTeams)	// teams ARE locked
 	{
-		// count teams
-		for(var t = 0; t < g_MaxPlayers; ++t)
+		// Count teams
+		for(var t = 0; t < g_PlayerCount; ++t)
 		{
-			if (!g_Teams[data.playerStates[t+1].team])
-			{
-				g_Teams[data.playerStates[t+1].team] = 1;
-				continue;
-			}
-			g_Teams[data.playerStates[t+1].team]++;
+			let playerTeam = data.playerStates[t+1].team;
+			if (g_Teams[playerTeam])
+				g_Teams[playerTeam]++;
+			else
+				g_Teams[playerTeam] = 1;
 		}
 
-		if (g_Teams.length == g_MaxPlayers)
+		if (g_Teams.length == g_PlayerCount)
 			g_Teams = false;	// Each player has his own team. Displaying teams makes no sense.
 	}
 	else				// teams are NOT locked
@@ -196,24 +192,18 @@ function init(data)
 	// Erase teams data if teams are not displayed
 	if (!g_Teams)
 	{
-		for(var p = 0; p < g_MaxPlayers; ++p)
+		for(var p = 0; p < g_PlayerCount; ++p)
 			data.playerStates[p+1].team = -1;
 	}
 
-	g_WithoutTeam = g_MaxPlayers;
+	g_WithoutTeam = g_PlayerCount;
 	if (g_Teams)
 	{
-		// count players without team	(or all if teams are not displayed)
+		// Count players without team (or all if teams are not displayed)
 		for (var i = 0; i < g_Teams.length; ++i)
-			g_WithoutTeam -= g_Teams[i];
+			g_WithoutTeam -= g_Teams[i] ? g_Teams[i] : 0;
 	}
 
 	selectPanel(0);
 
 }
-
-function onTick()
-{
-}
-
-

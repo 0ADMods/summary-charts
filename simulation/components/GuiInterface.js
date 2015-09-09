@@ -5,14 +5,20 @@ GuiInterface.prototype.Schema =
 
 GuiInterface.prototype.Serialize = function()
 {
-	// This component isn't network-synchronised so we mustn't serialise
-	// its non-deterministic data. Instead just return an empty object.
-	return {};
+	// This component isn't network-synchronised for the biggest part
+	// So most of the attributes shouldn't be serialized
+	// Return an object with a small selection of deterministic data
+	return {
+		"timeNotifications": this.timeNotifications,
+		"timeNotificationID": this.timeNotificationID
+	};
 };
 
-GuiInterface.prototype.Deserialize = function(obj)
+GuiInterface.prototype.Deserialize = function(data)
 {
 	this.Init();
+	this.timeNotifications = data.timeNotifications;
+	this.timeNotificationID = data.timeNotificationID;
 };
 
 GuiInterface.prototype.Init = function()
@@ -26,6 +32,7 @@ GuiInterface.prototype.Init = function()
 	this.timeNotificationID = 1;
 	this.timeNotifications = [];
 	this.entsRallyPointsDisplayed = [];
+	this.entsWithAuraAndStatusBars = new Set();
 };
 
 /*
@@ -47,11 +54,11 @@ GuiInterface.prototype.GetSimulationState = function(player)
 		"players": []
 	};
 
-	var cmpPlayerMan = Engine.QueryInterface(SYSTEM_ENTITY, IID_PlayerManager);
-	var n = cmpPlayerMan.GetNumPlayers();
+	var cmpPlayerManager = Engine.QueryInterface(SYSTEM_ENTITY, IID_PlayerManager);
+	var n = cmpPlayerManager.GetNumPlayers();
 	for (var i = 0; i < n; ++i)
 	{
-		var playerEnt = cmpPlayerMan.GetPlayerByID(i);
+		var playerEnt = cmpPlayerManager.GetPlayerByID(i);
 		var cmpPlayerEntityLimits = Engine.QueryInterface(playerEnt, IID_EntityLimits);
 		var cmpPlayer = Engine.QueryInterface(playerEnt, IID_Player);
 
@@ -83,7 +90,7 @@ GuiInterface.prototype.GetSimulationState = function(player)
 		var playerData = {
 			"name": cmpPlayer.GetName(),
 			"civ": cmpPlayer.GetCiv(),
-			"colour": cmpPlayer.GetColour(),
+			"color": cmpPlayer.GetColor(),
 			"popCount": cmpPlayer.GetPopulationCount(),
 			"popLimit": cmpPlayer.GetPopulationLimit(),
 			"popMax": cmpPlayer.GetMaxPopulation(),
@@ -111,15 +118,27 @@ GuiInterface.prototype.GetSimulationState = function(player)
 		};
 		ret.players.push(playerData);
 	}
-
+	
 	var cmpRangeManager = Engine.QueryInterface(SYSTEM_ENTITY, IID_RangeManager);
 	if (cmpRangeManager)
 		ret.circularMap = cmpRangeManager.GetLosCircular();
 
+	var cmpTerrain = Engine.QueryInterface(SYSTEM_ENTITY, IID_Terrain);
+	if (cmpTerrain)
+		ret.mapSize = 4 * cmpTerrain.GetTilesPerSide();
+
 	// Add timeElapsed
 	var cmpTimer = Engine.QueryInterface(SYSTEM_ENTITY, IID_Timer);
 	ret.timeElapsed = cmpTimer.GetTime();
-
+	
+	// Add ceasefire info
+	var cmpCeasefireManager = Engine.QueryInterface(SYSTEM_ENTITY, IID_CeasefireManager);
+	if (cmpCeasefireManager)
+	{
+		ret.ceasefireActive = cmpCeasefireManager.IsCeasefireActive();
+		ret.ceasefireTimeRemaining = ret.ceasefireActive ? cmpCeasefireManager.GetCeasefireStartedTime() + cmpCeasefireManager.GetCeasefireTime() - ret.timeElapsed : 0;
+	}
+	
 	// Add the game type
 	var cmpEndGameManager = Engine.QueryInterface(SYSTEM_ENTITY, IID_EndGameManager);
 	ret.gameType = cmpEndGameManager.GetGameType();
@@ -127,6 +146,17 @@ GuiInterface.prototype.GetSimulationState = function(player)
 	// Add bartering prices
 	var cmpBarter = Engine.QueryInterface(SYSTEM_ENTITY, IID_Barter);
 	ret.barterPrices = cmpBarter.GetPrices();
+
+	// Add basic statistics to each player
+	var cmpPlayerManager = Engine.QueryInterface(SYSTEM_ENTITY, IID_PlayerManager);
+	var n = cmpPlayerManager.GetNumPlayers();
+	for (var i = 0; i < n; ++i)
+	{
+		var playerEnt = cmpPlayerManager.GetPlayerByID(i);
+		var cmpPlayerStatisticsTracker = Engine.QueryInterface(playerEnt, IID_StatisticsTracker);
+		if (cmpPlayerStatisticsTracker)
+			ret.players[i].statistics = cmpPlayerStatisticsTracker.GetBasicStatistics();
+	}
 
 	// Add basic statistics to each player
 	var cmpPlayerMan = Engine.QueryInterface(SYSTEM_ENTITY, IID_PlayerManager);
@@ -154,11 +184,11 @@ GuiInterface.prototype.GetExtendedSimulationState = function(player)
 	var ret = this.GetSimulationState();
 
 	// Add statistics to each player
-	var cmpPlayerMan = Engine.QueryInterface(SYSTEM_ENTITY, IID_PlayerManager);
-	var n = cmpPlayerMan.GetNumPlayers();
+	var cmpPlayerManager = Engine.QueryInterface(SYSTEM_ENTITY, IID_PlayerManager);
+	var n = cmpPlayerManager.GetNumPlayers();
 	for (var i = 0; i < n; ++i)
 	{
-		var playerEnt = cmpPlayerMan.GetPlayerByID(i);
+		var playerEnt = cmpPlayerManager.GetPlayerByID(i);
 		
 		var cmpPlayerStatisticsTracker = Engine.QueryInterface(playerEnt, IID_StatisticsTracker);
 		if (cmpPlayerStatisticsTracker)
@@ -253,7 +283,7 @@ GuiInterface.prototype.GetEntityState = function(player, ent)
 		ret.rotation = cmpPosition.GetRotation();
 	}
 
-	var cmpHealth = Engine.QueryInterface(ent, IID_Health);
+	var cmpHealth = QueryMiragedInterface(ent, IID_Health);
 	if (cmpHealth)
 	{
 		ret.hitpoints = Math.ceil(cmpHealth.GetHitpoints());
@@ -261,11 +291,12 @@ GuiInterface.prototype.GetEntityState = function(player, ent)
 		ret.needsRepair = cmpHealth.IsRepairable() && (cmpHealth.GetHitpoints() < cmpHealth.GetMaxHitpoints());
 		ret.needsHeal = !cmpHealth.IsUnhealable();
 	}
-	if (cmpMirage && cmpMirage.Health())
+
+	var cmpCapturable = QueryMiragedInterface(ent, IID_Capturable);
+	if (cmpCapturable)
 	{
-		ret.hitpoints = cmpMirage.GetHitpoints();
-		ret.maxHitpoints = cmpMirage.GetMaxHitpoints();
-		ret.needsRepair = cmpMirage.NeedsRepair();
+		ret.capturePoints = cmpCapturable.GetCapturePoints();
+		ret.maxCapturePoints = cmpCapturable.GetMaxCapturePoints();
 	}
 
 	var cmpBuilder = Engine.QueryInterface(ent, IID_Builder);
@@ -309,7 +340,7 @@ GuiInterface.prototype.GetEntityState = function(player, ent)
 			ret.fogging = {"mirage": null};
 	}
 
-	var cmpFoundation = Engine.QueryInterface(ent, IID_Foundation);
+	var cmpFoundation = QueryMiragedInterface(ent, IID_Foundation);
 	if (cmpFoundation)
 	{
 		ret.foundation = {
@@ -317,13 +348,15 @@ GuiInterface.prototype.GetEntityState = function(player, ent)
 			"numBuilders": cmpFoundation.GetNumBuilders()
 		};
 	}
-	if (cmpMirage && cmpMirage.Foundation())
+
+	var cmpRepairable = QueryMiragedInterface(ent, IID_Repairable);
+	if (cmpRepairable)
 	{
-		ret.foundation = {
-			"progress": cmpMirage.GetBuildPercentage()
+		ret.repairable = {
+			"numBuilders": cmpRepairable.GetNumBuilders()
 		};
 	}
-
+    
 	var cmpOwnership = Engine.QueryInterface(ent, IID_Ownership);
 	if (cmpOwnership)
 	{
@@ -506,7 +539,7 @@ GuiInterface.prototype.GetExtendedEntityState = function(player, ent)
 	if (cmpPosition && cmpPosition.GetTurretParent() != INVALID_ENTITY)
 		ret.turretParent = cmpPosition.GetTurretParent();
 
-	var cmpResourceSupply = Engine.QueryInterface(ent, IID_ResourceSupply);
+	var cmpResourceSupply = QueryMiragedInterface(ent, IID_ResourceSupply);
 	if (cmpResourceSupply)
 	{
 		ret.resourceSupply = {
@@ -516,16 +549,7 @@ GuiInterface.prototype.GetExtendedEntityState = function(player, ent)
 			"type": cmpResourceSupply.GetType(),
 			"killBeforeGather": cmpResourceSupply.GetKillBeforeGather(),
 			"maxGatherers": cmpResourceSupply.GetMaxGatherers(),
-			"gatherers": cmpResourceSupply.GetGatherers()
-		};
-	}
-	if (cmpMirage && cmpMirage.ResourceSupply())
-	{
-		ret.resourceSupply = {
-			"max": cmpMirage.GetMaxAmount(),
-			"amount": cmpMirage.GetAmount(),
-			"type": cmpMirage.GetType(),
-			"isInfinite": cmpMirage.IsInfinite()
+			"numGatherers": cmpResourceSupply.GetNumGatherers()
 		};
 	}
 
@@ -602,8 +626,8 @@ GuiInterface.prototype.GetTemplateData = function(player, extendedName)
 
 GuiInterface.prototype.GetTechnologyData = function(player, name)
 {
-	var cmpTechTempMan = Engine.QueryInterface(SYSTEM_ENTITY, IID_TechnologyTemplateManager);
-	var template = cmpTechTempMan.GetTemplate(name);
+	var cmpTechnologyTemplateManager = Engine.QueryInterface(SYSTEM_ENTITY, IID_TechnologyTemplateManager);
+	var template = cmpTechnologyTemplateManager.GetTemplate(name);
 
 	if (!template)
 	{
@@ -684,68 +708,65 @@ GuiInterface.prototype.GetNeededResources = function(player, amounts)
 	return cmpPlayer.GetNeededResources(amounts);
 };
 
-GuiInterface.prototype.AddTimeNotification = function(notification)
+/**
+ * Add a timed notification.
+ * Warning: timed notifacations are serialised
+ * (to also display them on saved games or after a rejoin)
+ * so they should allways be added and deleted in a deterministic way.
+ */
+GuiInterface.prototype.AddTimeNotification = function(notification, duration = 10000)
 {
-	var time = Engine.QueryInterface(SYSTEM_ENTITY, IID_Timer).GetTime();
-	notification.endTime = notification.duration + time;
+	var cmpTimer = Engine.QueryInterface(SYSTEM_ENTITY, IID_Timer);
+	notification.endTime = duration + cmpTimer.GetTime();
 	notification.id = ++this.timeNotificationID;
+
+	// Let all players and observers receive the notification by default
+	if (notification.players == undefined)
+	{
+		var cmpPlayerManager = Engine.QueryInterface(SYSTEM_ENTITY, IID_PlayerManager);
+		var numPlayers = cmpPlayerManager.GetNumPlayers();
+		notification.players = [-1];
+		for (var i = 1; i < numPlayers; ++i)
+			notification.players.push(i);
+	}
 	this.timeNotifications.push(notification);
 	this.timeNotifications.sort(function (n1, n2){return n2.endTime - n1.endTime});
+
+	cmpTimer.SetTimeout(this.entity, IID_GuiInterface, "DeleteTimeNotification", duration, this.timeNotificationID);
+
 	return this.timeNotificationID;
 };
 
 GuiInterface.prototype.DeleteTimeNotification = function(notificationID)
 {
-	for (var i in this.timeNotifications)
-	{
-		if (this.timeNotifications[i].id == notificationID)
-		{
-			this.timeNotifications.splice(i);
-			return;
-		}
-	}
+	this.timeNotifications = this.timeNotifications.filter(n => n.id != notificationID);
 };
 
 GuiInterface.prototype.GetTimeNotifications = function(playerID)
 {
 	var time = Engine.QueryInterface(SYSTEM_ENTITY, IID_Timer).GetTime();
-	var toDelete = [];
-	for (var n of this.timeNotifications)
-	{
-		n.time = n.endTime - time;
-		if (n.time < 0)
-			toDelete.push(n.id);
-	}
-	for (var id of toDelete)
-		this.DeleteTimeNotification(id);
-	return this.timeNotifications;
+	// filter on players and time, since the delete timer might be executed with a delay
+	return this.timeNotifications.filter(n => n.players.indexOf(playerID) != -1 && n.endTime > time);
 };
 
 GuiInterface.prototype.PushNotification = function(notification)
 {
 	if (!notification.type || notification.type == "text")
-	{
-		if (!notification.duration)
-			notification.duration = 10000;
 		this.AddTimeNotification(notification);
-		return;
-	}
-	this.notifications.push(notification);
-};
-
-GuiInterface.prototype.GetNextNotification = function()
-{
-	if (this.notifications.length)
-		return this.notifications.pop();
 	else
-		return false;
+		this.notifications.push(notification);
 };
 
-GuiInterface.prototype.GetAvailableFormations = function(player, data)
+GuiInterface.prototype.GetNotifications = function()
 {
-	var cmpPlayerMan = Engine.QueryInterface(SYSTEM_ENTITY, IID_PlayerManager);
-	var cmpPlayer = Engine.QueryInterface(cmpPlayerMan.GetPlayerByID(player), IID_Player);
-	return cmpPlayer.GetFormations();
+	var n = this.notifications;
+	this.notifications = [];
+	return n;
+};
+
+GuiInterface.prototype.GetAvailableFormations = function(player, wantedPlayer)
+{
+	return QueryPlayerIDInterface(wantedPlayer).GetFormations();
 };
 
 GuiInterface.prototype.GetFormationRequirements = function(player, data)
@@ -819,8 +840,8 @@ GuiInterface.prototype.GetAllBuildableEntities = function(player, cmd)
 
 GuiInterface.prototype.SetSelectionHighlight = function(player, cmd)
 {
-	var cmpPlayerMan = Engine.QueryInterface(SYSTEM_ENTITY, IID_PlayerManager);
-	var playerColours = {}; // cache of owner -> colour map
+	var cmpPlayerManager = Engine.QueryInterface(SYSTEM_ENTITY, IID_PlayerManager);
+	var playerColors = {}; // cache of owner -> color map
 	
 	for each (var ent in cmd.entities)
 	{
@@ -828,33 +849,63 @@ GuiInterface.prototype.SetSelectionHighlight = function(player, cmd)
 		if (!cmpSelectable)
 			continue;
 
-		// Find the entity's owner's colour:
+		// Find the entity's owner's color:
 		var owner = -1;
 		var cmpOwnership = Engine.QueryInterface(ent, IID_Ownership);
 		if (cmpOwnership)
 			owner = cmpOwnership.GetOwner();
 
-		var colour = playerColours[owner];
-		if (!colour)
+		var color = playerColors[owner];
+		if (!color)
 		{
-			colour = {"r":1, "g":1, "b":1};
-			var cmpPlayer = Engine.QueryInterface(cmpPlayerMan.GetPlayerByID(owner), IID_Player);
+			color = {"r":1, "g":1, "b":1};
+			var cmpPlayer = Engine.QueryInterface(cmpPlayerManager.GetPlayerByID(owner), IID_Player);
 			if (cmpPlayer)
-				colour = cmpPlayer.GetColour();
-			playerColours[owner] = colour;
+				color = cmpPlayer.GetColor();
+			playerColors[owner] = color;
 		}
 
-		cmpSelectable.SetSelectionHighlight({"r":colour.r, "g":colour.g, "b":colour.b, "a":cmd.alpha}, cmd.selected);
+		cmpSelectable.SetSelectionHighlight({"r":color.r, "g":color.g, "b":color.b, "a":cmd.alpha}, cmd.selected);
 	}
+};
+
+GuiInterface.prototype.GetEntitiesWithStatusBars = function()
+{
+	return [...this.entsWithAuraAndStatusBars];
 };
 
 GuiInterface.prototype.SetStatusBars = function(player, cmd)
 {
-	for each (var ent in cmd.entities)
+	let affectedEnts = new Set();
+	for (let ent of cmd.entities)
 	{
-		var cmpStatusBars = Engine.QueryInterface(ent, IID_StatusBars);
+		let cmpStatusBars = Engine.QueryInterface(ent, IID_StatusBars);
+		if (!cmpStatusBars)
+			continue;
+		cmpStatusBars.SetEnabled(cmd.enabled);
+
+		let cmpAuras = Engine.QueryInterface(ent, IID_Auras);
+		if (!cmpAuras)
+			continue;
+
+		for (let name of cmpAuras.GetAuraNames())
+		{
+			if (!cmpAuras.GetOverlayIcon(name))
+				continue;
+			for (let e of cmpAuras.GetAffectedEntities(name))
+				affectedEnts.add(e);
+			if (cmd.enabled)
+				this.entsWithAuraAndStatusBars.add(ent);
+			else
+				this.entsWithAuraAndStatusBars.delete(ent);
+		}
+	}
+
+	for (let ent of affectedEnts)
+	{
+		let cmpStatusBars = Engine.QueryInterface(ent, IID_StatusBars)
 		if (cmpStatusBars)
-			cmpStatusBars.SetEnabled(cmd.enabled);
+			cmpStatusBars.RegenerateSprites();
 	}
 };
 
@@ -875,8 +926,7 @@ GuiInterface.prototype.GetPlayerEntities = function(player)
  */
 GuiInterface.prototype.DisplayRallyPoint = function(player, cmd)
 {
-	var cmpPlayerMan = Engine.QueryInterface(SYSTEM_ENTITY, IID_PlayerManager);
-	var cmpPlayer = Engine.QueryInterface(cmpPlayerMan.GetPlayerByID(player), IID_Player);
+	var cmpPlayer = QueryPlayerIDInterface(player);
 
 	// If there are some rally points already displayed, first hide them
 	for each (var ent in this.entsRallyPointsDisplayed)
@@ -1008,9 +1058,9 @@ GuiInterface.prototype.SetBuildingPlacementPreview = function(player, cmd)
 				cmpVisual.SetActorSeed(cmd.actorSeed);
 
 			if (!result.success)
-				cmpVisual.SetShadingColour(1.4, 0.4, 0.4, 1);
+				cmpVisual.SetShadingColor(1.4, 0.4, 0.4, 1);
 			else
-				cmpVisual.SetShadingColour(1, 1, 1, 1);
+				cmpVisual.SetShadingColor(1, 1, 1, 1);
 		}
 	}
 
@@ -1515,9 +1565,9 @@ GuiInterface.prototype.SetWallPlacementPreview = function(player, cmd)
 		if (cmpVisual)
 		{
 			if (!allPiecesValid || !canAfford)
-				cmpVisual.SetShadingColour(1.4, 0.4, 0.4, 1);
+				cmpVisual.SetShadingColor(1.4, 0.4, 0.4, 1);
 			else
-				cmpVisual.SetShadingColour(1, 1, 1, 1);
+				cmpVisual.SetShadingColor(1, 1, 1, 1);
 		}
 
 		entPool.numUsed++;
@@ -1556,9 +1606,7 @@ GuiInterface.prototype.SetWallPlacementPreview = function(player, cmd)
  */
 GuiInterface.prototype.GetFoundationSnapData = function(player, data)
 {
-	var cmpTemplateMgr = Engine.QueryInterface(SYSTEM_ENTITY, IID_TemplateManager);
-	var template = cmpTemplateMgr.GetTemplate(data.template);
-
+	var template = Engine.QueryInterface(SYSTEM_ENTITY, IID_TemplateManager).GetTemplate(data.template);
 	if (!template)
 	{
 		warn("[GetFoundationSnapData] Failed to load template '" + data.template + "'");
@@ -1630,15 +1678,11 @@ GuiInterface.prototype.FindIdleUnits = function(player, data)
 
 	var idleUnits = [];
 
-	for (var j = 0; j < playerEntities.length; ++j)
+	for (let ent of playerEntities)
 	{
-		var ent = playerEntities[j];
-
 		if (ent <= data.prevUnit|0 || data.excludeUnits.indexOf(ent) > -1)
 			continue;
 		idleUnits.push(ent);
-		playerEntities.splice(j--, 1);
-
 		if (data.limit && idleUnits.length >= data.limit)
 			break;
 	}
@@ -1697,13 +1741,35 @@ GuiInterface.prototype.GetTradingDetails = function(player, data)
 	return result;
 };
 
-GuiInterface.prototype.CanAttack = function(player, data)
+GuiInterface.prototype.CanCapture = function(player, data)
 {
 	var cmpAttack = Engine.QueryInterface(data.entity, IID_Attack);
 	if (!cmpAttack)
 		return false;
 
-	return cmpAttack.CanAttack(data.target);
+	var owner = QueryOwnerInterface(data.entity).GetPlayerID();
+
+	var cmpCapturable = QueryMiragedInterface(data.target, IID_Capturable);
+	if (cmpCapturable && cmpCapturable.CanCapture(owner) && cmpAttack.GetAttackTypes().indexOf("Capture") != -1)
+		return cmpAttack.CanAttack(data.target);
+
+	return false;
+};
+
+GuiInterface.prototype.CanAttack = function(player, data)
+{
+	var cmpAttack = Engine.QueryInterface(data.entity, IID_Attack);
+	if (!cmpAttack)
+		return false;
+	var cmpEntityPlayer = QueryOwnerInterface(data.entity, IID_Player);
+	var cmpTargetPlayer = QueryOwnerInterface(data.target, IID_Player);
+	if (!cmpEntityPlayer || !cmpTargetPlayer)
+		return false;
+
+	// if the owner is an enemy, it's up to the attack component to decide
+	if (cmpEntityPlayer.IsEnemy(cmpTargetPlayer.GetPlayerID()))
+		return cmpAttack.CanAttack(data.target);
+	return false;
 };
 
 /*
@@ -1728,6 +1794,12 @@ GuiInterface.prototype.SetPathfinderDebugOverlay = function(player, enabled)
 {
 	var cmpPathfinder = Engine.QueryInterface(SYSTEM_ENTITY, IID_Pathfinder);
 	cmpPathfinder.SetDebugOverlay(enabled);
+};
+
+GuiInterface.prototype.SetPathfinderHierDebugOverlay = function(player, enabled)
+{
+	var cmpPathfinder = Engine.QueryInterface(SYSTEM_ENTITY, IID_Pathfinder);
+	cmpPathfinder.SetHierDebugOverlay(enabled);
 };
 
 GuiInterface.prototype.SetObstructionDebugOverlay = function(player, enabled)
@@ -1824,7 +1896,7 @@ var exposedFunctions = {
 	"GetBattleState": 1,
 	"GetIncomingAttacks": 1,
 	"GetNeededResources": 1,
-	"GetNextNotification": 1,
+	"GetNotifications": 1,
 	"GetTimeNotifications": 1,
 
 	"GetAvailableFormations": 1,
@@ -1846,11 +1918,13 @@ var exposedFunctions = {
 	"FindIdleUnits": 1,
 	"GetTradingRouteGain": 1,
 	"GetTradingDetails": 1,
+	"CanCapture": 1,
 	"CanAttack": 1,
 	"GetBatchTime": 1,
 
 	"IsMapRevealed": 1,
 	"SetPathfinderDebugOverlay": 1,
+	"SetPathfinderHierDebugOverlay": 1,
 	"SetObstructionDebugOverlay": 1,
 	"SetMotionDebugOverlay": 1,
 	"SetRangeDebugOverlay": 1,
