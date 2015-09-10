@@ -9,6 +9,7 @@
 <objects>
 	<script file="gui/common/functions_global_object.js"/>
 	<script file="gui/common/functions_civinfo.js"/>
+	<script file="gui/common/functions_repeat_positioning.js"/>
 	<script file="gui/common/functions_utility.js"/>
 	<script file="gui/common/settings.js"/>
 	<script file="gui/summary/counters.js"/>
@@ -102,7 +103,9 @@
 
 		<object name="chartPanelButton" type="button" sprite="BackgroundTab" size="762 92 880 120">
 			<action on="Press">selectPanel(6);</action>
-			<object type="text" style="ModernLabelText" ghost="true">Charts</object>
+			<object type="text" style="ModernLabelText" ghost="true">
+				<translatableAttribute id="caption">Charts</translatableAttribute>
+			</object>
 		</object>
 
 		<object name="generalPanel" type="image" sprite="ForegroundBody" size="20 120 100%-20 100%-54">
@@ -167,94 +170,30 @@
 			<object size="0 0 100% 100%-30">
 
 				<!-- Menu -->
-				<object name="chartMenuUnits" type="button"  size="30 24 100 40">
-					<action on="Press">Charts.action(1);</action>
-					<object name="chartMenuCaptionUnits" type="text" style="ModernLabelText" ghost="true">Units</object>
-				</object>            
-
-				<object name="chartMenuBuildings" type="button" size="90 24 160 40">
-					<action on="Press">Charts.action(2);</action>
-					<object name="chartMenuCaptionBuildings" type="text" style="ModernLabelText" ghost="true">Buildings</object>
-				</object>        
-
-				<object name="chartMenuArea" type="button" size="150 24 220 40">
-					<action on="Press">Charts.action(3);</action>
-					<object name="chartMenuCaptionArea" type="text" style="ModernLabelText" ghost="true">Area</object>
-				</object>        
-
-				<object name="chartMenuFood" type="button" size="210 24 280 40">
-					<action on="Press">Charts.action(4);</action>
-					<object name="chartMenuCaptionFood" type="text" style="ModernLabelText" ghost="true">Food</object>
-				</object>        
-
-				<object name="chartMenuWood" type="button" size="270 24 340 40">
-					<action on="Press">Charts.action(5);</action>
-					<object name="chartMenuCaptionWood" type="text" style="ModernLabelText" ghost="true">Wood</object>
-				</object>        
-
-				<object name="chartMenuStone" type="button" size="330 24 400 40">
-					<action on="Press">Charts.action(6);</action>
-					<object name="chartMenuCaptionStone" type="text" style="ModernLabelText" ghost="true">Stone</object>
-				</object>        
-
-				<object name="chartMenuMetal" type="button" size="390 24 460 40">
-					<action on="Press">Charts.action(7);</action>
-					<object name="chartMenuCaptionMetal" type="text" style="ModernLabelText" ghost="true">Metal</object>
-				</object>        
+				<object size="45 24 100%-45 40">
+					<repeat count="8">
+						<object name="chartMenu[n]" type="button"  size="0 0 70 100%">
+							<action on="Press">Charts.changeMetric(this.name);</action>
+							<object name="chartMenu[n]_text" type="text" style="ModernLabelText" ghost="true"/>
+						</object>
+					</repeat>
+				</object>
 
 				<!-- Menu Line -->
 				<object name="chartLineHeader" type="image" sprite="chartLineWhite" size="40 42 100%-40 43"/>
 
 				<!-- Players -->
-				<object name="chartPlayer" type="text" style="ModernLabelText" size="600 46 680 66" textcolor="200 200 200">Player:</object>  
+				<object name="chartPlayer" type="text" style="ModernLabelText" size="600 46 680 66" textcolor="200 200 200">Player:</object>
 
-				<object name="chartPlayer1" type="button" size="670 46 700 66">
-					<object name="chartPlayerDot1" type="image" sprite="chartDotP1" size="0 6 8 14" hidden="false"/>
-					<object type="text" style="ModernLabelText" ghost="true" textcolor="200 200 200">1</object>
-					<action on="Press">Charts.action(null, 1);</action>
-				</object>  
-
-				<object name="chartPlayer2" type="button" size="700 46 730 66">
-					<object name="chartPlayerDot2" type="image" sprite="chartDotP2" size="0 6 8 14" hidden="false"/>
-					<object type="text" style="ModernLabelText" ghost="true" textcolor="200 200 200">2</object>
-					<action on="Press">Charts.action(null, 2);</action>
+				<object size="670 46 700 66">
+					<repeat count="8">
+						<object name="chartPlayer[n]" type="button" size="0 0 30 20">
+							<object name="chartPlayerDot[n]" type="image" sprite="chartDotP1" size="0 6 8 14"/>
+							<object name="chartPlayerText[n]" type="text" style="ModernLabelText" ghost="true" textcolor="200 200 200">1</object>
+							<action on="press">Charts.togglePlayer(this.name);</action>
+						</object>
+					</repeat>
 				</object>
-
-				<object name="chartPlayer3" type="button" size="730 46 760 66">
-					<object name="chartPlayerDot3" type="image" sprite="chartDotP3" size="0 6 8 14" hidden="false"/>
-					<action on="Press">Charts.action(null, 3);</action>
-					<object type="text" style="ModernLabelText" ghost="true" textcolor="200 200 200">3</object>
-				</object>  
-
-				<object name="chartPlayer4" type="button" size="760 46 790 66">
-					<object name="chartPlayerDot4" type="image" sprite="chartDotP4" size="0 6 8 14" hidden="false"/>
-					<action on="Press">Charts.action(null, 4);</action>
-					<object type="text" style="ModernLabelText" ghost="true" textcolor="200 200 200">4</object>
-				</object>  
-
-				<object name="chartPlayer5" type="button" size="790 46 820 66">
-					<object name="chartPlayerDot5" type="image" sprite="chartDotP5" size="0 6 8 14" hidden="false"/>
-					<action on="Press">Charts.action(null, 5);</action>
-					<object type="text" style="ModernLabelText" ghost="true" textcolor="200 200 200">5</object>
-				</object>  
-
-				<object name="chartPlayer6" type="button" size="820 46 850 66">
-					<object name="chartPlayerDot6" type="image" sprite="chartDotP6" size="0 6 8 14" hidden="false"/>
-					<action on="Press">Charts.action(null, 6);</action>
-					<object type="text" style="ModernLabelText" ghost="true" textcolor="200 200 200">6</object>
-				</object>  
-
-				<object name="chartPlayer7" type="button" size="850 46 880 66">
-					<object name="chartPlayerDot7" type="image" sprite="chartDotP7" size="0 6 8 14" hidden="false"/>
-					<action on="Press">Charts.action(null, 7);</action>
-					<object type="text" style="ModernLabelText" ghost="true" textcolor="200 200 200">7</object>
-				</object>  
-
-				<object name="chartPlayer8" type="button" size="880 46 910 66">
-					<object name="chartPlayerDot8" type="image" sprite="chartDotP8" size="0 6 8 14" hidden="false"/>
-					<action on="Press">Charts.action(null, 8);</action>
-					<object type="text" style="ModernLabelText" ghost="true" textcolor="200 200 200">8</object>
-				</object>  
 
 				<!-- X/Y Axis -->
 				<object name="chartLineAxisX" type="image" sprite="chartLineGray" size="30 540 960 541"/> 
@@ -273,37 +212,15 @@
 				<object name="chartTickTextXHalf" type="text" style="ModernLabelText" text_align = "right" size="405 540 469 560">50 min</object>
 
 				<!-- Dots -->
-				<repeat count="110">
-					<object name="chartDot1[n]" type="image" sprite="chartDotP1" size="40 40 48 48" hidden="false"/>
-				</repeat>            
-			
-				<repeat count="110">
-					<object name="chartDot2[n]" type="image" sprite="chartDotP2" size="40 40 48 48" hidden="false"/>
-				</repeat>            
-				
-				<repeat count="110">
-					<object name="chartDot3[n]" type="image" sprite="chartDotP3" size="40 40 48 48" hidden="false"/>
-				</repeat>            
-				
-				<repeat count="110">
-					<object name="chartDot4[n]" type="image" sprite="chartDotP4" size="40 40 48 48" hidden="false"/>
-				</repeat>            
-				
-				<repeat count="110">
-					<object name="chartDot5[n]" type="image" sprite="chartDotP5" size="40 40 48 48" hidden="false"/>
-				</repeat>            
-				
-				<repeat count="110">
-					<object name="chartDot6[n]" type="image" sprite="chartDotP6" size="40 40 48 48" hidden="false"/>
-				</repeat>            
-				
-				<repeat count="110">
-					<object name="chartDot7[n]" type="image" sprite="chartDotP7" size="40 40 48 48" hidden="false"/>
-				</repeat>            
-				
-				<repeat count="110">
-					<object name="chartDot8[n]" type="image" sprite="chartDotP8" size="40 40 48 48" hidden="false"/>
-				</repeat>            
+				<object size="50-4 71-4 100% 100%">
+					<repeat var="p" count="8">
+						<object>
+							<repeat var="d" count="110">
+								<object name="chartDot[p][d]" type="image" sprite="chartDotP0" size="0 0 8 8"/>
+							</repeat>
+						</object>
+					</repeat>
+				</object>
 
 			</object>
 		</object>
