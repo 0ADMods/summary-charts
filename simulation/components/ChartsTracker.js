@@ -1,6 +1,6 @@
 
 // Updates every minute (60000)
-const UPDATE_TIMER_INTERVAL = 60000, VERSION = "0.1.18";
+const UPDATE_TIMER_INTERVAL = 60000, VERSION = "0.1.19a";
 
 function ChartsTracker() {}
 
@@ -14,8 +14,8 @@ ChartsTracker.prototype.GetChartData = function()
 ChartsTracker.prototype.Init = function()
 {
 	var cmpTimer = Engine.QueryInterface(SYSTEM_ENTITY, IID_Timer);
-	this.updateTimer = cmpTimer.SetInterval(this.entity, IID_ChartsTracker, "updateData", UPDATE_TIMER_INTERVAL, UPDATE_TIMER_INTERVAL, {});
-	this.timeStamp = 0;
+	this.updateTimer = cmpTimer.SetInterval(this.entity, IID_ChartsTracker, "updateData", 0, UPDATE_TIMER_INTERVAL, {});
+	this.timeStamp = -1;
 	this.chartData = {};
 };
 
@@ -25,13 +25,15 @@ ChartsTracker.prototype.updateData = function()
 	var cmpPlayer = Engine.QueryInterface(this.entity, IID_Player);
 	var id = cmpPlayer.GetPlayerID();
 	var mapExplored = Engine.QueryInterface(SYSTEM_ENTITY, IID_RangeManager).GetPercentMapExplored(cmpPlayer.GetPlayerID());
+	var mapControlled = Engine.QueryInterface(SYSTEM_ENTITY, IID_TerritoryManager).GetTerritoryPercentage(cmpPlayer.GetPlayerID());
 	var resourceCount = cmpPlayer.GetResourceCounts();
 	var statistics = Engine.QueryInterface(this.entity, IID_StatisticsTracker).GetStatistics();
 
-	this.timeStamp += 1;
+	++this.timeStamp;
 
-	this.chartData[this.timeStamp + ""] = {
-		'area':  mapExplored,
+	this.chartData[this.timeStamp.toString()] = {
+		'mapControl': mapControlled,
+		'explored':  mapExplored,
 		'food':  resourceCount.food,
 		'wood':  resourceCount.wood,
 		'stone': resourceCount.stone,

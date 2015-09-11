@@ -172,7 +172,7 @@
 				<!-- Menu -->
 				<object size="45 24 100%-45 40">
 					<repeat count="8">
-						<object name="chartMenu[n]" type="button"  size="0 0 70 100%">
+						<object name="chartMenu[n]" type="button"  size="0 0 80 100%">
 							<action on="Press">Charts.changeMetric(this.name);</action>
 							<object name="chartMenu[n]_text" type="text" style="ModernLabelText" ghost="true"/>
 						</object>

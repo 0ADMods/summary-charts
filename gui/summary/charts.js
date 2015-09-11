@@ -12,11 +12,12 @@ var Charts = (function() {
 	var m_Metrics = [
 		{ "id": "buildings", "name": "Buildings" },
 		{ "id": "units", "name": "Units" },
-		{ "id": "area", "name": "Explored" },
 		{ "id": "food", "name": "Food" },
 		{ "id": "wood", "name": "Wood" },
 		{ "id": "stone", "name": "Stone" },
 		{ "id": "metal", "name": "Metal" },
+		{ "id": "explored", "name": "Explored" },
+		{ "id": "mapControl", "name": "Territory" },
 	];
 	var m_Players = [
 		{ 'colour': { 'r': 255, 'g': 255, 'b': 255 }, visible: false }, // gaia
@@ -62,7 +63,7 @@ var Charts = (function() {
 	function init(dataGame)
 	{
 		var maxPlayers = dataGame.playerStates.length;
-		m_MatchLength = Object.keys(dataGame.playerStates[1].chartData).length;
+		m_MatchLength = Object.keys(dataGame.playerStates[1].chartData).length - 1;
 
 		deb("init: m_Players: %s, stamps: %s\n", maxPlayers -1, m_MatchLength);
 
@@ -79,7 +80,7 @@ var Charts = (function() {
 		var m = 0;
 		for (m in m_Metrics)
 			$("chartMenu["+m+"]_text").caption = translate(m_Metrics[m].name);
-		hideRemaining("chartMenu[", m, "]");
+		hideRemaining("chartMenu[", ++m, "]");
 
 		// setup players' dots
 		horizSpaceRepeatedObjects("chartPlayer[p]", "p");
@@ -154,9 +155,10 @@ var Charts = (function() {
 	function showTicks()
 	{
 		var metric = m_Metrics[m_CurrMetric].id;
+		var ySuffix = (["explored", "mapControl"].indexOf(metric) > -1) ? "%" : "";
 
-		$("chartTickTextYMax").caption  = ~~m_Metrics[m_CurrMetric].max + (metric === "area" ? "%" : "");
-		$("chartTickTextYHalf").caption = ~~(m_Metrics[m_CurrMetric].max / 2) + (metric === "area" ? "%" : "");
+		$("chartTickTextYMax").caption  = ~~m_Metrics[m_CurrMetric].max + ySuffix;
+		$("chartTickTextYHalf").caption = ~~(m_Metrics[m_CurrMetric].max / 2) + ySuffix;
 		$("chartTickTextXMax").caption  = m_MatchLength + " min";
 		$("chartTickTextXHalf").caption = ~~(m_MatchLength / 2) + " min";
 	}
