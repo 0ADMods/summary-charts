@@ -19,17 +19,8 @@ var Charts = (function() {
 		{ "id": "explored", "name": "Explored" },
 		{ "id": "mapControl", "name": "Territory" },
 	];
-	var m_Players = [
-		{ 'colour': { 'r': 255, 'g': 255, 'b': 255 }, visible: false }, // gaia
-		{ 'colour': { 'r':  46, 'g':  46, 'b': 200 }, visible: false }, // blue
-		{ 'colour': { 'r': 150, 'g':  20, 'b':  20 }, visible: false }, // red
-		{ 'colour': { 'r':  50, 'g': 165, 'b':   5 }, visible: false }, // green
-		{ 'colour': { 'r': 230, 'g': 230, 'b':  75 }, visible: false }, // yellow
-		{ 'colour': { 'r':  50, 'g': 170, 'b': 170 }, visible: false }, // turquois
-		{ 'colour': { 'r': 160, 'g':  80, 'b': 200 }, visible: false }, // pink
-		{ 'colour': { 'r': 235, 'g': 120, 'b':  20 }, visible: false }, // orange
-		{ 'colour': { 'r':  64, 'g':  64, 'b':  64 }, visible: false }, // gray
-	];
+	var m_Players = [];
+
 	/* ...and a shorthand */
 	var $ = Engine.GetGUIObjectByName;
 
@@ -74,6 +65,13 @@ var Charts = (function() {
 			m.min = 1e10;
 			m.max = 0;
 		}
+
+		// setup internal player object
+		for (let p=0; p<maxPlayers; ++p)
+			m_Players[p] = {
+				"visible": false,
+				"color": g_GameData.players[p].color
+			};
 
 		// setup menu options
 		horizSpaceRepeatedObjects("chartMenu[m]", "m");
@@ -174,15 +172,13 @@ var Charts = (function() {
 
 		deb("\n====> showMetric: %s (%s), min: %s, max: %s\n", m_Metrics[metric].id, metric, m_Metrics[metric].min, m_Metrics[metric].max);
 
-		for (let p in m_Players)
+		var p;
+		for (p in m_Players)
 		{
 			if (+p === 0)
 				continue;
 
 			let player = m_Players[p];
-
-			// player dots
-			$("chartPlayer[" + (p-1) + "]").hidden = !m_Metrics[metric].points[p];
 
 			// data dots
 			if (m_Metrics[metric].points[p])
@@ -211,6 +207,7 @@ var Charts = (function() {
 				}
 			}
 		}
+		hideRemaining("chartPlayer[", p, "]");
 
 		showTicks();
 	}  
