@@ -23,10 +23,6 @@ var Charts = (function() {
 	];
 	var m_Players = [];
 
-	function deb   () {if (DEBUG > 0){print(fmt.apply(null, arguments));}}
-	function tab   (s, l) {l=l||8;s=new Array(l+1).join(" ")+s;return s.substr(s.length-l);}
-	function fmt   () {var a=Array.prototype.slice.apply(arguments),s=a[0].split("%s"),p=a.slice(1).concat([""]),c=0;return s.map(function(t){return t + p[c++];}).join('');}
-
 	function getIdxFromName (name) { return +name.substring(name.indexOf("[")+1, name.indexOf("]")); }
 
 	function interpolate(data, points)
@@ -54,8 +50,6 @@ var Charts = (function() {
 	{
 		var maxPlayers = dataGame.playerStates.length;
 		m_MatchLength = Object.keys(dataGame.playerStates[1].chartData).length - 1;
-
-		deb("init: m_Players: %s, stamps: %s\n", maxPlayers -1, m_MatchLength);
 
 		// add common attributes to m_Metrics object
 		for (let m of m_Metrics)
@@ -107,10 +101,8 @@ var Charts = (function() {
 			{
 				let chartData = dataGame.playerStates[p].chartData;
 				let data = Object.keys(chartData).map(stamp => chartData[stamp][metricData.id]);
-				// deb("init: p: %s, m: %s, data: %s\n", p, m, data);
 				metricData.points[p] = {};
 				data = interpolate(data, DOTS);
-				// deb("init: p: %s, m: %s, data: %s\n", p, m, data);
 				metricData.points[p] = data;
 			}
 		}
@@ -130,7 +122,6 @@ var Charts = (function() {
 			}
 			metricData.max = maxAll;
 			metricData.min = minAll;
-			deb("init: min: %s, max: %s, metric: %s\n", tab(Math.floor(minAll, 4)), tab(Math.floor(maxAll, 6)), metricData.id);
 		}
 
 		// scale data to GUI
@@ -169,8 +160,6 @@ var Charts = (function() {
 			Engine.GetGUIObjectByName("chartMenu["+m+"]_text").textcolor = "180 180 180";
 		Engine.GetGUIObjectByName("chartMenu["+metric+"]_text").textcolor = "255 255 255";
 
-		deb("\n====> showMetric: %s (%s), min: %s, max: %s\n", m_Metrics[metric].id, metric, m_Metrics[metric].min, m_Metrics[metric].max);
-
 		var p;
 		for (p in m_Players)
 		{
@@ -183,13 +172,6 @@ var Charts = (function() {
 			if (m_Metrics[metric].points[p])
 			{
 				let data = m_Metrics[metric].points[p];
-				if (DEBUG)
-				{
-					let min  = +Math.min.apply(Math, data);
-					let max  = +Math.max.apply(Math, data);
-					deb("p: %s, vis: %s, len: %s, min: %s, max: %s\n", p, player.visible, data.length, min, max);
-				}
-
 				for (let i = 0; i < DOTS; i++)
 				{
 					let dot = Engine.GetGUIObjectByName("chartDot[" +(p-1)+ "][" +i+ "]");
@@ -213,8 +195,6 @@ var Charts = (function() {
 
 	return {
 		action: function(metric, player, data) {
-
-			deb("\n====> Charts.action: %s, %s, %s\n", metric, player, data);
 
 			if (!metric && !player){init(data); showMetric(0); return;}
 			if ( metric && !player){showMetric(metric -1);     return;}
