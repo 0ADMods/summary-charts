@@ -212,11 +212,11 @@
 				<object name="chartTickTextXHalf" type="text" style="ModernLabelText" text_align = "right" size="405 540 469 560">50 min</object>
 
 				<!-- Dots -->
-				<object size="50-4 71-4 100% 100%">
+				<object size="50+2 71-4 100% 100%">
 					<repeat var="p" count="8">
 						<object>
-							<repeat var="d" count="110">
-								<object name="chartDot[p][d]" type="image" sprite="chartDotP0" size="0 0 8 8"/>
+							<repeat var="d" count="880">
+								<object name="chartDot[p][d]" type="image" sprite="chartDotP0" size="0 0 4 4"/>
 							</repeat>
 						</object>
 					</repeat>

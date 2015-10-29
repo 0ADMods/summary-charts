@@ -1,6 +1,6 @@
 
-// Updates every minute (60000)
-const UPDATE_TIMER_INTERVAL = 60000, VERSION = "0.1.19a";
+// Updates every minute (60,000 ms)
+const CHARTS_UPDATE_TIMER_INTERVAL = 60000;
 
 function ChartsTracker() {}
 
@@ -14,7 +14,7 @@ ChartsTracker.prototype.GetChartData = function()
 ChartsTracker.prototype.Init = function()
 {
 	var cmpTimer = Engine.QueryInterface(SYSTEM_ENTITY, IID_Timer);
-	this.updateTimer = cmpTimer.SetInterval(this.entity, IID_ChartsTracker, "updateData", 0, UPDATE_TIMER_INTERVAL, {});
+	this.updateTimer = cmpTimer.SetInterval(this.entity, IID_ChartsTracker, "updateData", 0, CHARTS_UPDATE_TIMER_INTERVAL, {});
 	this.timeStamp = -1;
 	this.chartData = {};
 };
@@ -42,7 +42,7 @@ ChartsTracker.prototype.updateData = function()
 		'buildings': statistics.buildingsConstructed.total - statistics.buildingsLost.total
 	};
 
-	// print ("CHARTS: updateData: p: " + id + "/" +  this.timeStamp + " : " + uneval(this.chartData[this.timeStamp + ""]) + "\n");
+	// warn ("CHARTS: updateData: p: " + id + "/" +  this.timeStamp + " : " + uneval(this.chartData[this.timeStamp + ""]) + "\n");
 };
 
 Engine.RegisterComponentType(IID_ChartsTracker, "ChartsTracker", ChartsTracker);

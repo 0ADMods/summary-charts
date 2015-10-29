@@ -204,5 +204,5 @@ function init(data)
 			g_WithoutTeam -= g_Teams[i] ? g_Teams[i] : 0;
 	}
 
-	selectPanel(0);
+	selectPanel(6);
 }

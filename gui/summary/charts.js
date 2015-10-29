@@ -1,10 +1,12 @@
-/* globals Engine, horizSpaceRepeatedObjects, translate */
+/* jshint esnext: true */
+/* globals Engine, g_GameData, horizSpaceRepeatedObjects, hideRemaining, translate */
+/* exported Charts */
 
 var Charts = (function() {
 
 	"use strict";
 
-	const DOTS = 110, HEIGHT = 470, DEBUG = 1, VERSION = "0.1.19a";
+	const DOTS = 880, HEIGHT = 470, DEBUG=1;
 
 	/* Define member variables */
 	var m_CurrMetric = 1;
@@ -20,9 +22,6 @@ var Charts = (function() {
 		{ "id": "mapControl", "name": "Territory" },
 	];
 	var m_Players = [];
-
-	/* ...and a shorthand */
-	var $ = Engine.GetGUIObjectByName;
 
 	function deb   () {if (DEBUG > 0){print(fmt.apply(null, arguments));}}
 	function tab   (s, l) {l=l||8;s=new Array(l+1).join(" ")+s;return s.substr(s.length-l);}
@@ -44,7 +43,7 @@ var Charts = (function() {
 
 		for (let i=1; i<points-1; ++i){
 			let tmp = i * factor;
-			let point = ~~tmp;
+			let point = Math.floor(tmp);
 			newData[i] = linear(data[point], data[point+1], tmp - point);
 		}
 
@@ -77,7 +76,7 @@ var Charts = (function() {
 		horizSpaceRepeatedObjects("chartMenu[m]", "m");
 		var m = 0;
 		for (m in m_Metrics)
-			$("chartMenu["+m+"]_text").caption = translate(m_Metrics[m].name);
+			Engine.GetGUIObjectByName("chartMenu["+m+"]_text").caption = translate(m_Metrics[m].name);
 		hideRemaining("chartMenu[", ++m, "]");
 
 		// setup players' dots
@@ -85,14 +84,14 @@ var Charts = (function() {
 		for (let p=0; p<8; ++p)
 		{
 			// player dots
-			$("chartPlayerDot[" + p + "]").sprite = "chartDotP" + (p+1);
-			$("chartPlayerText[" + p + "]").caption = (p+1);
+			Engine.GetGUIObjectByName("chartPlayerDot[" + p + "]").sprite = "chartDotP" + (p+1);
+			Engine.GetGUIObjectByName("chartPlayerText[" + p + "]").caption = (p+1);
 
 			// data dots
-			horizSpaceRepeatedObjects("chartDot[" + p + "][d]", "d");
+			horizSpaceRepeatedObjects("chartDot[" + p + "][d]", "d", -3);
 			for (let d=0;; ++d)
 			{
-				let objObj = $("chartDot[" + p + "][" + d + "]");
+				let objObj = Engine.GetGUIObjectByName("chartDot[" + p + "][" + d + "]");
 				if (!objObj)
 					break;
 				objObj.sprite = "chartDotP"+(p+1);
@@ -131,7 +130,7 @@ var Charts = (function() {
 			}
 			metricData.max = maxAll;
 			metricData.min = minAll;
-			deb("init: min: %s, max: %s, metric: %s\n", tab(~~minAll, 4), tab(~~maxAll, 6), metricData.id);
+			deb("init: min: %s, max: %s, metric: %s\n", tab(Math.floor(minAll, 4)), tab(Math.floor(maxAll, 6)), metricData.id);
 		}
 
 		// scale data to GUI
@@ -143,7 +142,7 @@ var Charts = (function() {
 
 	function togglePlayer(player)
 	{
-		var sprite = $("chartPlayerDot[" + (player-1) +"]");
+		var sprite = Engine.GetGUIObjectByName("chartPlayerDot[" + (player-1) +"]");
 
 		m_Players[player].visible = !m_Players[player].visible;
 		sprite.sprite = m_Players[player].visible ? "chartDotP" + player : "chartDotP0";
@@ -155,10 +154,10 @@ var Charts = (function() {
 		var metric = m_Metrics[m_CurrMetric].id;
 		var ySuffix = (["explored", "mapControl"].indexOf(metric) > -1) ? "%" : "";
 
-		$("chartTickTextYMax").caption  = ~~m_Metrics[m_CurrMetric].max + ySuffix;
-		$("chartTickTextYHalf").caption = ~~(m_Metrics[m_CurrMetric].max / 2) + ySuffix;
-		$("chartTickTextXMax").caption  = m_MatchLength + " min";
-		$("chartTickTextXHalf").caption = ~~(m_MatchLength / 2) + " min";
+		Engine.GetGUIObjectByName("chartTickTextYMax").caption  = Math.floor(m_Metrics[m_CurrMetric].max) + ySuffix;
+		Engine.GetGUIObjectByName("chartTickTextYHalf").caption = Math.floor(m_Metrics[m_CurrMetric].max / 2) + ySuffix;
+		Engine.GetGUIObjectByName("chartTickTextXMax").caption  = m_MatchLength + " min";
+		Engine.GetGUIObjectByName("chartTickTextXHalf").caption = Math.floor(m_MatchLength / 2) + " min";
 	}
 
 	function showMetric(metric)
@@ -167,8 +166,8 @@ var Charts = (function() {
 
 		// highlight current metric's text
 		for (let m in m_Metrics)
-			$("chartMenu["+m+"]_text").textcolor = "180 180 180";
-		$("chartMenu["+metric+"]_text").textcolor = "255 255 255";
+			Engine.GetGUIObjectByName("chartMenu["+m+"]_text").textcolor = "180 180 180";
+		Engine.GetGUIObjectByName("chartMenu["+metric+"]_text").textcolor = "255 255 255";
 
 		deb("\n====> showMetric: %s (%s), min: %s, max: %s\n", m_Metrics[metric].id, metric, m_Metrics[metric].min, m_Metrics[metric].max);
 
@@ -193,14 +192,14 @@ var Charts = (function() {
 
 				for (let i = 0; i < DOTS; i++)
 				{
-					let dot = $("chartDot[" +(p-1)+ "][" +i+ "]");
+					let dot = Engine.GetGUIObjectByName("chartDot[" +(p-1)+ "][" +i+ "]");
 					dot.hidden = true;
 
 					if (player.visible)
 					{
 						let newSize = dot.size;
 						newSize.top = HEIGHT - data[i];
-						newSize.bottom = newSize.top + 8;
+						newSize.bottom = newSize.top + 4;
 						dot.size = newSize;
 						dot.hidden = false;
 					}
@@ -237,4 +236,3 @@ var Charts = (function() {
 	};
 
 }());
-
