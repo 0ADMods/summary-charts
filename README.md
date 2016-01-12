@@ -29,10 +29,14 @@ Thanks go to him for the effort he put in.
 
 #### License
 The XML files within this work are based on work and examples by
-Wildfire Games, and are available under the Creative Commons Attribution
-ShareAlike 3.0 license. Details may be found at
+Wildfire Games, which are released under the Creative Commons
+Attribution ShareAlike 3.0 license. Details may be found at
 http://creativecommons.org/licenses/by-sa/3.0/
 
-The scripting and everything else contained within this work is
-released under the GPLv2+ license. Details may be found at
-http://opensource.org/licenses/GPL-2.0
+The scripting within this work is, similarly, based on work and examples
+by the same Wildfire Games, released under the GPLv2+ license. Details
+may be found at http://opensource.org/licenses/GPL-2.0
+
+The work derived from the original work and examples, and everything
+else contained within this mod, is released under the MIT License. A
+copy of the License agreement is included with this mod.
