@@ -12,6 +12,8 @@
 	<script file="gui/common/functions_repeat_positioning.js"/>
 	<script file="gui/common/functions_utility.js"/>
 	<script file="gui/common/settings.js"/>
+
+	<!-- After settings.js, which defines g_Settings and g_MaxPlayers. -->
 	<script file="gui/summary/counters.js"/>
 	<script file="gui/summary/layout.js"/>
 	<script file="gui/summary/summary.js"/>
@@ -229,7 +231,15 @@
 		<object type="button" style="ModernButtonRed" size="100%-160 100%-48 100%-20 100%-20">
 			<translatableAttribute id="caption">Continue</translatableAttribute>
 			<action on="Press"><![CDATA[
-				if (!Engine.HasXmppClient())
+				if (g_GameData.isInGame)
+				{
+					Engine.PopGuiPageCB(0);
+				}
+				else if (g_GameData.isReplay)
+				{
+					Engine.SwitchGuiPage("page_replaymenu.xml");
+				}
+				else if (!Engine.HasXmppClient())
 				{
 					Engine.SwitchGuiPage("page_pregame.xml");
 				}
